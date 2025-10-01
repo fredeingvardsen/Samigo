@@ -1,8 +1,9 @@
 "use client"
 
-import { loadGoogleMapsAPI } from "@/lib/google-maps-loader"
+import { APIProvider, Map, Marker, Circle, useMap, useMapsLibrary } from "@vis.gl/react-google-maps"
 import { getAllEfterskoler, type Efterskole } from "@/lib/efterskoler-service"
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useState } from "react"
+import * as google from "googlemaps"
 
 interface GoogleMapProps {
   height?: string
@@ -33,22 +34,17 @@ interface GoogleMapProps {
   showEfterskoler?: boolean
 }
 
-export function GoogleMap({
-  height = "400px",
+function MapContent({
   selectedLocation,
   rides,
   showRadius,
   rideRoute,
   showEfterskoler = false,
-}: GoogleMapProps) {
-  const mapRef = useRef<HTMLDivElement>(null)
-  const mapInstanceRef = useRef<any | null>(null)
-  const markersRef = useRef<any[]>([])
-  const circleRef = useRef<any | null>(null)
-  const directionsRendererRef = useRef<any | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+}: Omit<GoogleMapProps, "height">) {
+  const map = useMap()
   const [efterskoler, setEfterskoler] = useState<Efterskole[]>([])
+  const [directions, setDirections] = useState<any | null>(null)
+  const directionsService = useMapsLibrary("routes")
 
   useEffect(() => {
     if (showEfterskoler) {
@@ -56,319 +52,245 @@ export function GoogleMap({
     }
   }, [showEfterskoler])
 
-  // Initialize map
+  // Handle route rendering
   useEffect(() => {
-    let mounted = true
-
-    async function initMap() {
-      try {
-        await loadGoogleMapsAPI()
-
-        if (!mounted || !mapRef.current) return
-
-        // Create map centered on Denmark
-        const map = new window.google.maps.Map(mapRef.current, {
-          center: { lat: 55.6761, lng: 12.5683 }, // Copenhagen
-          zoom: 7,
-          mapTypeControl: false,
-          streetViewControl: false,
-          fullscreenControl: false,
-        })
-
-        mapInstanceRef.current = map
-        setIsLoading(false)
-      } catch (err) {
-        console.error("[v0] Failed to initialize map:", err)
-        setError("Kunne ikke indlæse kortet")
-        setIsLoading(false)
-      }
+    if (!map || !directionsService || !rideRoute) {
+      setDirections(null)
+      return
     }
 
-    initMap()
-
-    return () => {
-      mounted = false
-      // Cleanup markers
-      markersRef.current.forEach((marker) => marker.setMap(null))
-      markersRef.current = []
-      if (circleRef.current) {
-        circleRef.current.setMap(null)
-      }
-      if (directionsRendererRef.current) {
-        directionsRendererRef.current.setMap(null)
-      }
-    }
-  }, [])
-
-  // Update map with selected location
-  useEffect(() => {
-    if (!mapInstanceRef.current || !selectedLocation) return
-
-    const map = mapInstanceRef.current
-
-    // Clear existing markers
-    markersRef.current.forEach((marker) => marker.setMap(null))
-    markersRef.current = []
-
-    // Add marker for selected location
-    const marker = new window.google.maps.Marker({
-      position: { lat: selectedLocation.lat, lng: selectedLocation.lng },
-      map,
-      title: selectedLocation.name,
-      icon: {
-        path: window.google.maps.SymbolPath.CIRCLE,
-        scale: 8,
-        fillColor: "#4285F4",
-        fillOpacity: 1,
-        strokeColor: "#ffffff",
-        strokeWeight: 2,
+    const service = new google.maps.DirectionsService()
+    service.route(
+      {
+        origin: rideRoute.start,
+        destination: rideRoute.end,
+        travelMode: google.maps.TravelMode.DRIVING,
       },
-    })
+      (result, status) => {
+        if (status === "OK" && result) {
+          setDirections(result)
+        } else {
+          console.error("[v0] Directions request failed:", status)
+          setDirections(null)
+        }
+      },
+    )
+  }, [map, directionsService, rideRoute])
 
-    markersRef.current.push(marker)
-
-    // Center map on location
-    map.setCenter({ lat: selectedLocation.lat, lng: selectedLocation.lng })
-    map.setZoom(12)
-  }, [selectedLocation])
-
-  // Update radius circle
+  // Fit bounds to show all markers
   useEffect(() => {
-    if (!mapInstanceRef.current) return
+    if (!map) return
 
-    // Remove existing circle
-    if (circleRef.current) {
-      circleRef.current.setMap(null)
-      circleRef.current = null
-    }
-
-    if (showRadius) {
-      const circle = new window.google.maps.Circle({
-        map: mapInstanceRef.current,
-        center: showRadius.center,
-        radius: showRadius.radiusKm * 1000, // Convert km to meters
-        fillColor: "#4285F4",
-        fillOpacity: 0.15,
-        strokeColor: "#4285F4",
-        strokeOpacity: 0.5,
-        strokeWeight: 2,
-      })
-
-      circleRef.current = circle
-
-      // Fit map to circle bounds
-      mapInstanceRef.current.fitBounds(circle.getBounds()!)
-    }
-  }, [showRadius])
-
-  useEffect(() => {
-    if (!mapInstanceRef.current) return
-
-    const map = mapInstanceRef.current
-
-    // Clear existing markers (except selected location)
-    markersRef.current.forEach((marker) => marker.setMap(null))
-    markersRef.current = []
-
-    const bounds = new window.google.maps.LatLngBounds()
+    const bounds = new google.maps.LatLngBounds()
     let hasMarkers = false
 
-    // Add markers for efterskoler
-    if (showEfterskoler && efterskoler.length > 0) {
-      efterskoler.forEach((efterskole) => {
-        if (efterskole.latitude && efterskole.longitude) {
-          const marker = new window.google.maps.Marker({
-            position: { lat: efterskole.latitude, lng: efterskole.longitude },
-            map,
-            title: efterskole.name,
-            icon: {
-              url:
-                "data:image/svg+xml;charset=UTF-8," +
-                encodeURIComponent(`
-                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
-                  <circle cx="16" cy="16" r="14" fill="#10b981" stroke="white" strokeWidth="2"/>
-                  <text x="16" y="21" fontSize="16" textAnchor="middle" fill="white">🏫</text>
-                </svg>
-              `),
-              scaledSize: new window.google.maps.Size(32, 32),
-              anchor: new window.google.maps.Point(16, 16),
-            },
-          })
-
-          const infoWindow = new window.google.maps.InfoWindow({
-            content: `
-              <div style="padding: 8px; min-width: 200px;">
-                <strong style="font-size: 14px;">${efterskole.name}</strong><br/>
-                <span style="color: #666; font-size: 12px;">${efterskole.city}, ${efterskole.region || ""}</span><br/>
-                <span style="color: #888; font-size: 11px;">${efterskole.address}</span>
-              </div>
-            `,
-          })
-
-          marker.addListener("click", () => {
-            infoWindow.open(map, marker)
-          })
-
-          markersRef.current.push(marker)
-          bounds.extend(marker.getPosition()!)
-          hasMarkers = true
-        }
-      })
+    if (selectedLocation) {
+      bounds.extend({ lat: selectedLocation.lat, lng: selectedLocation.lng })
+      hasMarkers = true
     }
 
-    // Add markers for each ride
     if (rides && rides.length > 0) {
       rides.forEach((ride) => {
         if (ride.location_lat && ride.location_lng) {
-          // Departure marker
-          const departureMarker = new window.google.maps.Marker({
-            position: { lat: ride.location_lat, lng: ride.location_lng },
-            map,
-            title: `Afgang: ${ride.location}`,
-            icon: {
-              url:
-                "data:image/svg+xml;charset=UTF-8," +
-                encodeURIComponent(`
-                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
-                  <circle cx="16" cy="16" r="14" fill="#3b82f6" stroke="white" strokeWidth="2"/>
-                  <text x="16" y="21" fontSize="16" textAnchor="middle" fill="white">🚗</text>
-                </svg>
-              `),
-              scaledSize: new window.google.maps.Size(32, 32),
-              anchor: new window.google.maps.Point(16, 16),
-            },
-          })
-
-          const departureInfo = new window.google.maps.InfoWindow({
-            content: `
-              <div style="padding: 8px; min-width: 200px;">
-                <strong style="font-size: 14px;">Afgang: ${ride.location}</strong><br/>
-                <span style="color: #666; font-size: 12px;">Destination: ${ride.destination}</span><br/>
-                <span style="color: #3b82f6; font-size: 12px; font-weight: 500;">${ride.available_seats} ledige pladser</span>
-              </div>
-            `,
-          })
-
-          departureMarker.addListener("click", () => {
-            departureInfo.open(map, departureMarker)
-          })
-
-          markersRef.current.push(departureMarker)
-          bounds.extend(departureMarker.getPosition()!)
+          bounds.extend({ lat: ride.location_lat, lng: ride.location_lng })
           hasMarkers = true
-
-          // Destination marker
-          if (ride.destination_lat && ride.destination_lng) {
-            const destinationMarker = new window.google.maps.Marker({
-              position: { lat: ride.destination_lat, lng: ride.destination_lng },
-              map,
-              title: `Destination: ${ride.destination}`,
-              icon: {
-                url:
-                  "data:image/svg+xml;charset=UTF-8," +
-                  encodeURIComponent(`
-                  <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
-                    <circle cx="16" cy="16" r="14" fill="#ef4444" stroke="white" strokeWidth="2"/>
-                    <text x="16" y="21" fontSize="16" textAnchor="middle" fill="white">📍</text>
-                  </svg>
-                `),
-                scaledSize: new window.google.maps.Size(32, 32),
-                anchor: new window.google.maps.Point(16, 16),
-              },
-            })
-
-            const destinationInfo = new window.google.maps.InfoWindow({
-              content: `
-                <div style="padding: 8px;">
-                  <strong style="font-size: 14px;">Destination: ${ride.destination}</strong>
-                </div>
-              `,
-            })
-
-            destinationMarker.addListener("click", () => {
-              destinationInfo.open(map, destinationMarker)
-            })
-
-            markersRef.current.push(destinationMarker)
-            bounds.extend(destinationMarker.getPosition()!)
-          }
+        }
+        if (ride.destination_lat && ride.destination_lng) {
+          bounds.extend({ lat: ride.destination_lat, lng: ride.destination_lng })
+          hasMarkers = true
         }
       })
     }
 
-    // Fit map to show all markers if we have any
-    if (hasMarkers && !showRadius) {
+    if (showEfterskoler && efterskoler.length > 0) {
+      efterskoler.forEach((efterskole) => {
+        if (efterskole.latitude && efterskole.longitude) {
+          bounds.extend({ lat: efterskole.latitude, lng: efterskole.longitude })
+          hasMarkers = true
+        }
+      })
+    }
+
+    if (showRadius) {
+      const radiusInMeters = showRadius.radiusKm * 1000
+      const circle = new google.maps.Circle({
+        center: showRadius.center,
+        radius: radiusInMeters,
+      })
+      bounds.union(circle.getBounds()!)
+      hasMarkers = true
+    }
+
+    if (hasMarkers) {
       map.fitBounds(bounds)
       // Prevent zooming in too much for single markers
-      const listener = window.google.maps.event.addListenerOnce(map, "bounds_changed", () => {
+      const listener = google.maps.event.addListenerOnce(map, "bounds_changed", () => {
         if (map.getZoom()! > 15) {
           map.setZoom(15)
         }
       })
     }
-  }, [rides, efterskoler, showEfterskoler, showRadius])
+  }, [map, selectedLocation, rides, efterskoler, showEfterskoler, showRadius])
 
-  // Update route
+  return (
+    <>
+      {/* Selected location marker */}
+      {selectedLocation && (
+        <Marker
+          position={{ lat: selectedLocation.lat, lng: selectedLocation.lng }}
+          title={selectedLocation.name}
+          icon={{
+            path: google.maps.SymbolPath.CIRCLE,
+            scale: 8,
+            fillColor: "#4285F4",
+            fillOpacity: 1,
+            strokeColor: "#ffffff",
+            strokeWeight: 2,
+          }}
+        />
+      )}
+
+      {/* Radius circle */}
+      {showRadius && (
+        <Circle
+          center={showRadius.center}
+          radius={showRadius.radiusKm * 1000}
+          options={{
+            fillColor: "#4285F4",
+            fillOpacity: 0.15,
+            strokeColor: "#4285F4",
+            strokeOpacity: 0.5,
+            strokeWeight: 2,
+          }}
+        />
+      )}
+
+      {/* Efterskole markers */}
+      {showEfterskoler &&
+        efterskoler.map(
+          (efterskole) =>
+            efterskole.latitude &&
+            efterskole.longitude && (
+              <Marker
+                key={efterskole.id}
+                position={{ lat: efterskole.latitude, lng: efterskole.longitude }}
+                title={efterskole.name}
+                icon={{
+                  url:
+                    "data:image/svg+xml;charset=UTF-8," +
+                    encodeURIComponent(`
+                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+                      <circle cx="16" cy="16" r="14" fill="#10b981" stroke="white" strokeWidth="2"/>
+                      <text x="16" y="21" fontSize="16" textAnchor="middle" fill="white">🏫</text>
+                    </svg>
+                  `),
+                  scaledSize: new google.maps.Size(32, 32),
+                  anchor: new google.maps.Point(16, 16),
+                }}
+              />
+            ),
+        )}
+
+      {/* Ride markers */}
+      {rides &&
+        rides.map((ride) => (
+          <div key={ride.id}>
+            {ride.location_lat && ride.location_lng && (
+              <Marker
+                position={{ lat: ride.location_lat, lng: ride.location_lng }}
+                title={`Afgang: ${ride.location}`}
+                icon={{
+                  url:
+                    "data:image/svg+xml;charset=UTF-8," +
+                    encodeURIComponent(`
+                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+                      <circle cx="16" cy="16" r="14" fill="#3b82f6" stroke="white" strokeWidth="2"/>
+                      <text x="16" y="21" fontSize="16" textAnchor="middle" fill="white">🚗</text>
+                    </svg>
+                  `),
+                  scaledSize: new google.maps.Size(32, 32),
+                  anchor: new google.maps.Point(16, 16),
+                }}
+              />
+            )}
+            {ride.destination_lat && ride.destination_lng && (
+              <Marker
+                position={{ lat: ride.destination_lat, lng: ride.destination_lng }}
+                title={`Destination: ${ride.destination}`}
+                icon={{
+                  url:
+                    "data:image/svg+xml;charset=UTF-8," +
+                    encodeURIComponent(`
+                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+                      <circle cx="16" cy="16" r="14" fill="#ef4444" stroke="white" strokeWidth="2"/>
+                      <text x="16" y="21" fontSize="16" textAnchor="middle" fill="white">📍</text>
+                    </svg>
+                  `),
+                  scaledSize: new google.maps.Size(32, 32),
+                  anchor: new google.maps.Point(16, 16),
+                }}
+              />
+            )}
+          </div>
+        ))}
+
+      {/* Directions polyline */}
+      {directions && <DirectionsRenderer directions={directions} />}
+    </>
+  )
+}
+
+function DirectionsRenderer({ directions }: { directions: any }) {
+  const map = useMap()
+
   useEffect(() => {
-    if (!mapInstanceRef.current) return
+    if (!map || !directions) return
 
-    // Remove existing route
-    if (directionsRendererRef.current) {
-      directionsRendererRef.current.setMap(null)
-      directionsRendererRef.current = null
+    const renderer = new google.maps.DirectionsRenderer({
+      map,
+      directions,
+      suppressMarkers: false,
+      polylineOptions: {
+        strokeColor: "#3b82f6",
+        strokeWeight: 4,
+        strokeOpacity: 0.7,
+      },
+    })
+
+    return () => {
+      renderer.setMap(null)
     }
+  }, [map, directions])
 
-    if (rideRoute) {
-      const directionsService = new window.google.maps.DirectionsService()
-      const directionsRenderer = new window.google.maps.DirectionsRenderer({
-        map: mapInstanceRef.current,
-        suppressMarkers: false,
-        polylineOptions: {
-          strokeColor: "#3b82f6",
-          strokeWeight: 4,
-          strokeOpacity: 0.7,
-        },
-      })
+  return null
+}
 
-      directionsRendererRef.current = directionsRenderer
+export function GoogleMap({ height = "400px", ...props }: GoogleMapProps) {
+  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
 
-      directionsService.route(
-        {
-          origin: rideRoute.start,
-          destination: rideRoute.end,
-          travelMode: window.google.maps.TravelMode.DRIVING,
-        },
-        (result, status) => {
-          if (status === "OK" && result) {
-            directionsRenderer.setDirections(result)
-          } else {
-            console.error("[v0] Directions request failed:", status)
-          }
-        },
-      )
-    }
-  }, [rideRoute])
-
-  if (error) {
+  if (!apiKey) {
     return (
       <div className="flex items-center justify-center bg-muted rounded-lg" style={{ height }}>
         <div className="text-center p-4">
-          <p className="text-sm text-destructive">{error}</p>
+          <p className="text-sm text-destructive">Google Maps API key ikke konfigureret</p>
         </div>
       </div>
     )
   }
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center bg-muted rounded-lg" style={{ height }}>
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2" />
-          <p className="text-sm text-muted-foreground">Indlæser kort...</p>
-        </div>
-      </div>
-    )
-  }
-
-  return <div ref={mapRef} style={{ height, width: "100%" }} className="rounded-lg" />
+  return (
+    <APIProvider apiKey={apiKey} language="da" region="DK">
+      <Map
+        defaultCenter={{ lat: 55.6761, lng: 12.5683 }}
+        defaultZoom={7}
+        style={{ height, width: "100%", borderRadius: "0.5rem" }}
+        mapTypeControl={false}
+        streetViewControl={false}
+        fullscreenControl={false}
+        gestureHandling="greedy"
+      >
+        <MapContent {...props} />
+      </Map>
+    </APIProvider>
+  )
 }

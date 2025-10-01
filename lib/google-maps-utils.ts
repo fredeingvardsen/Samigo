@@ -1,22 +1,15 @@
-// Google Maps utility functions
-import { google } from "google-maps"
+declare const google: any
 
 export function calculateDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
-  if (!google?.maps?.geometry) {
-    // Fallback to Haversine formula if Google Maps not loaded
-    const R = 6371 // Earth's radius in km
-    const dLat = ((lat2 - lat1) * Math.PI) / 180
-    const dLng = ((lng2 - lng1) * Math.PI) / 180
-    const a =
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLng / 2) * Math.sin(dLng / 2)
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-    return R * c
-  }
-
-  const from = new google.maps.LatLng(lat1, lng1)
-  const to = new google.maps.LatLng(lat2, lng2)
-  return google.maps.geometry.spherical.computeDistanceBetween(from, to) / 1000 // Convert to km
+  // Haversine formula
+  const R = 6371 // Earth's radius in km
+  const dLat = ((lat2 - lat1) * Math.PI) / 180
+  const dLng = ((lng2 - lng1) * Math.PI) / 180
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLng / 2) * Math.sin(dLng / 2)
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+  return R * c
 }
 
 export async function geocodeAddress(address: string): Promise<{
@@ -24,7 +17,7 @@ export async function geocodeAddress(address: string): Promise<{
   lng: number
   formattedAddress: string
 } | null> {
-  if (!google?.maps) {
+  if (typeof window === "undefined" || !window.google?.maps) {
     return null
   }
 
@@ -34,7 +27,7 @@ export async function geocodeAddress(address: string): Promise<{
     geocoder.geocode(
       {
         address,
-        region: "DK", // Prioritize Denmark
+        region: "DK",
         componentRestrictions: { country: "DK" },
       },
       (results, status) => {

@@ -1,7 +1,7 @@
 "use client"
 
 import { Input } from "@/components/ui/input"
-import { loadGoogleMapsAPI } from "@/lib/google-maps-loader"
+import { APIProvider, useMapsLibrary } from "@vis.gl/react-google-maps"
 import { searchEfterskoler, type Efterskole } from "@/lib/efterskoler-service"
 import { useEffect, useRef, useState } from "react"
 import { google } from "google-maps"
@@ -13,69 +13,55 @@ interface GoogleLocationSearchProps {
   placeholder?: string
 }
 
-export function GoogleLocationSearch({ value, onChange, onLocationSelect, placeholder }: GoogleLocationSearchProps) {
+function LocationSearchInput({ value, onChange, onLocationSelect, placeholder }: GoogleLocationSearchProps) {
   const inputRef = useRef<HTMLInputElement>(null)
   const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const places = useMapsLibrary("places")
   const [efterskoleSuggestions, setEfterskoleSuggestions] = useState<Efterskole[]>([])
   const [showSuggestions, setShowSuggestions] = useState(false)
   const suggestionsRef = useRef<HTMLDivElement>(null)
 
+  // Initialize autocomplete
   useEffect(() => {
-    let mounted = true
+    if (!places || !inputRef.current) return
 
-    async function initAutocomplete() {
-      try {
-        await loadGoogleMapsAPI()
+    autocompleteRef.current = new google.maps.places.Autocomplete(inputRef.current, {
+      componentRestrictions: { country: "dk" },
+      fields: ["address_components", "geometry", "name", "formatted_address", "place_id"],
+      types: ["geocode", "establishment"],
+    })
 
-        if (!mounted || !inputRef.current) return
+    const denmarkBounds = new google.maps.LatLngBounds(
+      new google.maps.LatLng(54.5, 8.0),
+      new google.maps.LatLng(57.8, 15.2),
+    )
+    autocompleteRef.current.setBounds(denmarkBounds)
 
-        autocompleteRef.current = new google.maps.places.Autocomplete(inputRef.current, {
-          componentRestrictions: { country: "dk" },
-          fields: ["address_components", "geometry", "name", "formatted_address", "place_id"],
-          types: ["geocode", "establishment"],
-        })
+    const listener = autocompleteRef.current.addListener("place_changed", () => {
+      const place = autocompleteRef.current?.getPlace()
 
-        const denmarkBounds = new google.maps.LatLngBounds(
-          new google.maps.LatLng(54.5, 8.0), // Southwest corner
-          new google.maps.LatLng(57.8, 15.2), // Northeast corner
-        )
-        autocompleteRef.current.setBounds(denmarkBounds)
+      if (place?.geometry?.location) {
+        const location = {
+          name: place.name || place.formatted_address || "",
+          lat: place.geometry.location.lat(),
+          lng: place.geometry.location.lng(),
+          address: place.formatted_address || "",
+        }
 
-        // Listen for place selection
-        autocompleteRef.current.addListener("place_changed", () => {
-          const place = autocompleteRef.current?.getPlace()
-
-          if (place?.geometry?.location) {
-            const location = {
-              name: place.name || place.formatted_address || "",
-              lat: place.geometry.location.lat(),
-              lng: place.geometry.location.lng(),
-              address: place.formatted_address || "",
-            }
-
-            onLocationSelect(location)
-            onChange(location.name)
-            setShowSuggestions(false)
-          }
-        })
-
-        setIsLoading(false)
-      } catch (err) {
-        console.error("[v0] Failed to load Google Maps:", err)
-        setError("Kunne ikke indlæse Google Maps")
-        setIsLoading(false)
+        onLocationSelect(location)
+        onChange(location.name)
+        setShowSuggestions(false)
       }
-    }
-
-    initAutocomplete()
+    })
 
     return () => {
-      mounted = false
+      if (listener) {
+        google.maps.event.removeListener(listener)
+      }
     }
-  }, [onLocationSelect, onChange])
+  }, [places, onLocationSelect, onChange])
 
+  // Search efterskoler
   useEffect(() => {
     const searchTimeout = setTimeout(async () => {
       if (value.length >= 2) {
@@ -91,6 +77,7 @@ export function GoogleLocationSearch({ value, onChange, onLocationSelect, placeh
     return () => clearTimeout(searchTimeout)
   }, [value])
 
+  // Close suggestions on outside click
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (
@@ -120,10 +107,6 @@ export function GoogleLocationSearch({ value, onChange, onLocationSelect, placeh
     }
   }
 
-  if (error) {
-    return <div className="text-sm text-destructive p-2 border border-destructive rounded">{error}</div>
-  }
-
   return (
     <div className="relative">
       <Input
@@ -136,8 +119,7 @@ export function GoogleLocationSearch({ value, onChange, onLocationSelect, placeh
             setShowSuggestions(true)
           }
         }}
-        placeholder={isLoading ? "Indlæser..." : placeholder}
-        disabled={isLoading}
+        placeholder={placeholder}
       />
 
       {showSuggestions && efterskoleSuggestions.length > 0 && (
@@ -163,5 +145,23 @@ export function GoogleLocationSearch({ value, onChange, onLocationSelect, placeh
         </div>
       )}
     </div>
+  )
+}
+
+export function GoogleLocationSearch(props: GoogleLocationSearchProps) {
+  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+
+  if (!apiKey) {
+    return (
+      <div className="text-sm text-destructive p-2 border border-destructive rounded">
+        Google Maps API key ikke konfigureret
+      </div>
+    )
+  }
+
+  return (
+    <APIProvider apiKey={apiKey} language="da" region="DK">
+      <LocationSearchInput {...props} />
+    </APIProvider>
   )
 }

@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-
+import { SchoolAutocomplete } from "@/components/school-autocomplete"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -16,7 +16,7 @@ export default function SignUpPage() {
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
   const [fullName, setFullName] = useState("")
-  const [schoolName, setSchoolName] = useState("")
+  const [selectedSchool, setSelectedSchool] = useState<{ id: string; name: string } | null>(null)
   const [phone, setPhone] = useState("")
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
@@ -40,6 +40,12 @@ export default function SignUpPage() {
       return
     }
 
+    if (!selectedSchool) {
+      setError("Vælg venligst din efterskole fra listen")
+      setIsLoading(false)
+      return
+    }
+
     try {
       const redirectUrl =
         process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL ||
@@ -54,7 +60,8 @@ export default function SignUpPage() {
           emailRedirectTo: redirectUrl,
           data: {
             full_name: fullName,
-            school_name: schoolName,
+            school_id: selectedSchool.id,
+            school_name: selectedSchool.name,
             phone: phone,
           },
         },
@@ -110,13 +117,11 @@ export default function SignUpPage() {
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="schoolName">Efterskole</Label>
-                  <Input
-                    id="schoolName"
-                    type="text"
-                    placeholder="Navn på din efterskole"
+                  <SchoolAutocomplete
+                    value={selectedSchool?.name || ""}
+                    onSchoolSelect={(school) => setSelectedSchool(school ? { id: school.id, name: school.name } : null)}
+                    placeholder="Søg efter din efterskole..."
                     required
-                    value={schoolName}
-                    onChange={(e) => setSchoolName(e.target.value)}
                   />
                 </div>
                 <div className="grid gap-2">

@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { SchoolAutocomplete } from "@/components/school-autocomplete"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 
@@ -16,6 +17,7 @@ interface Profile {
   full_name: string
   phone: string | null
   school_name: string | null
+  school_id: string | null
 }
 
 interface ProfileFormProps {
@@ -26,8 +28,10 @@ export function ProfileForm({ profile }: ProfileFormProps) {
   const [formData, setFormData] = useState({
     fullName: profile?.full_name || "",
     phone: profile?.phone || "",
-    schoolName: profile?.school_name || "",
   })
+  const [selectedSchool, setSelectedSchool] = useState<{ id: string; name: string } | null>(
+    profile?.school_id && profile?.school_name ? { id: profile.school_id, name: profile.school_name } : null,
+  )
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
@@ -45,6 +49,12 @@ export function ProfileForm({ profile }: ProfileFormProps) {
     setError(null)
     setSuccess(false)
 
+    if (!selectedSchool) {
+      setError("Vælg venligst din efterskole fra listen")
+      setIsLoading(false)
+      return
+    }
+
     try {
       const {
         data: { user },
@@ -56,7 +66,8 @@ export function ProfileForm({ profile }: ProfileFormProps) {
         .update({
           full_name: formData.fullName,
           phone: formData.phone || null,
-          school_name: formData.schoolName || null,
+          school_id: selectedSchool.id,
+          school_name: selectedSchool.name,
         })
         .eq("id", user.id)
 
@@ -101,14 +112,11 @@ export function ProfileForm({ profile }: ProfileFormProps) {
 
           <div className="space-y-2">
             <Label htmlFor="schoolName">Efterskole *</Label>
-            <Input
-              id="schoolName"
-              name="schoolName"
-              type="text"
-              placeholder="Navn på din efterskole"
+            <SchoolAutocomplete
+              value={selectedSchool?.name || ""}
+              onSchoolSelect={(school) => setSelectedSchool(school ? { id: school.id, name: school.name } : null)}
+              placeholder="Søg efter din efterskole..."
               required
-              value={formData.schoolName}
-              onChange={handleInputChange}
             />
           </div>
 
