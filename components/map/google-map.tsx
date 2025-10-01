@@ -1,6 +1,6 @@
 "use client"
 
-import { APIProvider, Map, Marker, Circle, useMap, useMapsLibrary } from "@vis.gl/react-google-maps"
+import { APIProvider, Map, Marker, useMap, useMapsLibrary } from "@vis.gl/react-google-maps"
 import { getAllEfterskoler, type Efterskole } from "@/lib/efterskoler-service"
 import { useEffect, useState } from "react"
 import * as google from "googlemaps"
@@ -43,7 +43,7 @@ function MapContent({
 }: Omit<GoogleMapProps, "height">) {
   const map = useMap()
   const [efterskoler, setEfterskoler] = useState<Efterskole[]>([])
-  const [directions, setDirections] = useState<any | null>(null)
+  const [directions, setDirections] = useState<google.maps.DirectionsResult | null>(null)
   const directionsService = useMapsLibrary("routes")
 
   useEffect(() => {
@@ -70,7 +70,7 @@ function MapContent({
         if (status === "OK" && result) {
           setDirections(result)
         } else {
-          console.error("[v0] Directions request failed:", status)
+          console.error("Directions request failed:", status)
           setDirections(null)
         }
       },
@@ -117,15 +117,19 @@ function MapContent({
         center: showRadius.center,
         radius: radiusInMeters,
       })
-      bounds.union(circle.getBounds()!)
+      const circleBounds = circle.getBounds()
+      if (circleBounds) {
+        bounds.union(circleBounds)
+      }
       hasMarkers = true
     }
 
     if (hasMarkers) {
       map.fitBounds(bounds)
       // Prevent zooming in too much for single markers
-      const listener = google.maps.event.addListenerOnce(map, "bounds_changed", () => {
-        if (map.getZoom()! > 15) {
+      google.maps.event.addListenerOnce(map, "bounds_changed", () => {
+        const zoom = map.getZoom()
+        if (zoom && zoom > 15) {
           map.setZoom(15)
         }
       })
@@ -151,19 +155,7 @@ function MapContent({
       )}
 
       {/* Radius circle */}
-      {showRadius && (
-        <Circle
-          center={showRadius.center}
-          radius={showRadius.radiusKm * 1000}
-          options={{
-            fillColor: "#4285F4",
-            fillOpacity: 0.15,
-            strokeColor: "#4285F4",
-            strokeOpacity: 0.5,
-            strokeWeight: 2,
-          }}
-        />
-      )}
+      {showRadius && <CircleOverlay center={showRadius.center} radiusKm={showRadius.radiusKm} />}
 
       {/* Efterskole markers */}
       {showEfterskoler &&
@@ -240,7 +232,36 @@ function MapContent({
   )
 }
 
-function DirectionsRenderer({ directions }: { directions: any }) {
+// Custom CircleOverlay component using native Google Maps Circle
+function CircleOverlay({ center, radiusKm }: { center: { lat: number; lng: number }; radiusKm: number }) {
+  const map = useMap()
+  const [circle, setCircle] = useState<google.maps.Circle | null>(null)
+
+  useEffect(() => {
+    if (!map) return
+
+    const newCircle = new google.maps.Circle({
+      map,
+      center,
+      radius: radiusKm * 1000, // Convert km to meters
+      fillColor: "#4285F4",
+      fillOpacity: 0.15,
+      strokeColor: "#4285F4",
+      strokeOpacity: 0.5,
+      strokeWeight: 2,
+    })
+
+    setCircle(newCircle)
+
+    return () => {
+      newCircle.setMap(null)
+    }
+  }, [map, center, radiusKm])
+
+  return null
+}
+
+function DirectionsRenderer({ directions }: { directions: google.maps.DirectionsResult }) {
   const map = useMap()
 
   useEffect(() => {

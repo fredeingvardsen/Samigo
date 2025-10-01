@@ -8,12 +8,22 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { GoogleLocationSearch } from "@/components/map/google-location-search"
 import { GoogleMap } from "@/components/map/google-map"
 import { useRouter } from "next/navigation"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 
 export function OfferRideForm() {
+  const [direction, setDirection] = useState<"to_school" | "from_school">("to_school")
+  const [userProfile, setUserProfile] = useState<{
+    school_id: string | null
+    school_name: string | null
+    home_address: string | null
+    home_lat: number | null
+    home_lng: number | null
+  } | null>(null)
+
   const [formData, setFormData] = useState({
     departureLocation: "",
     destination: "",
@@ -32,6 +42,86 @@ export function OfferRideForm() {
   const [showMap, setShowMap] = useState(false)
   const router = useRouter()
 
+  useEffect(() => {
+    async function fetchProfile() {
+      const supabase = createClient()
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+
+      if (user) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("school_id, school_name, home_address, home_lat, home_lng")
+          .eq("id", user.id)
+          .single()
+
+        if (profile) {
+          setUserProfile(profile)
+
+          if (direction === "to_school" && profile.home_address) {
+            setFormData((prev) => ({ ...prev, departureLocation: profile.home_address || "" }))
+            if (profile.home_lat && profile.home_lng) {
+              setSelectedLocations((prev) => ({
+                ...prev,
+                departure: {
+                  name: profile.home_address || "",
+                  lat: profile.home_lat!,
+                  lng: profile.home_lng!,
+                  address: profile.home_address || "",
+                },
+              }))
+            }
+          }
+        }
+      }
+    }
+
+    fetchProfile()
+  }, [])
+
+  useEffect(() => {
+    if (!userProfile) return
+
+    if (direction === "to_school") {
+      if (userProfile.home_address) {
+        setFormData((prev) => ({ ...prev, departureLocation: userProfile.home_address || "" }))
+        if (userProfile.home_lat && userProfile.home_lng) {
+          setSelectedLocations((prev) => ({
+            ...prev,
+            departure: {
+              name: userProfile.home_address || "",
+              lat: userProfile.home_lat!,
+              lng: userProfile.home_lng!,
+              address: userProfile.home_address || "",
+            },
+          }))
+        }
+      }
+      if (userProfile.school_name) {
+        setFormData((prev) => ({ ...prev, destination: userProfile.school_name || "" }))
+      }
+    } else {
+      if (userProfile.school_name) {
+        setFormData((prev) => ({ ...prev, departureLocation: userProfile.school_name || "" }))
+      }
+      if (userProfile.home_address) {
+        setFormData((prev) => ({ ...prev, destination: userProfile.home_address || "" }))
+        if (userProfile.home_lat && userProfile.home_lng) {
+          setSelectedLocations((prev) => ({
+            ...prev,
+            destination: {
+              name: userProfile.home_address || "",
+              lat: userProfile.home_lat!,
+              lng: userProfile.home_lng!,
+              address: userProfile.home_address || "",
+            },
+          }))
+        }
+      }
+    }
+  }, [direction, userProfile])
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
     setFormData((prev) => ({ ...prev, [name]: value }))
@@ -48,7 +138,43 @@ export function OfferRideForm() {
         ...prev,
         [field === "departure" ? "departureLocation" : "destination"]: location.name,
       }))
+
+      if (field === "departure" && direction === "to_school") {
+        saveHomeAddress(location)
+      }
+      if (field === "destination" && direction === "from_school") {
+        saveHomeAddress(location)
+      }
     }
+
+  const saveHomeAddress = async (location: { name: string; lat: number; lng: number; address: string }) => {
+    const supabase = createClient()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    if (user) {
+      await supabase
+        .from("profiles")
+        .update({
+          home_address: location.address,
+          home_lat: location.lat,
+          home_lng: location.lng,
+        })
+        .eq("id", user.id)
+
+      setUserProfile((prev) =>
+        prev
+          ? {
+              ...prev,
+              home_address: location.address,
+              home_lat: location.lat,
+              home_lng: location.lng,
+            }
+          : null,
+      )
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -57,13 +183,11 @@ export function OfferRideForm() {
     setError(null)
 
     try {
-      // Get current user
       const {
         data: { user },
       } = await supabase.auth.getUser()
       if (!user) throw new Error("Du skal være logget ind")
 
-      // Parse pickup spots into array
       const pickupSpotsArray = formData.pickupSpots
         .split(",")
         .map((spot) => spot.trim())
@@ -78,14 +202,12 @@ export function OfferRideForm() {
         price_per_seat: formData.pricePerSeat ? Number.parseFloat(formData.pricePerSeat) : null,
         pickup_spots: pickupSpotsArray,
         description: formData.description || null,
-        // Add coordinates if available
         departure_lat: selectedLocations.departure?.lat || null,
         departure_lng: selectedLocations.departure?.lng || null,
         destination_lat: selectedLocations.destination?.lat || null,
         destination_lng: selectedLocations.destination?.lng || null,
       }
 
-      // Create ride
       const { error } = await supabase.from("rides").insert(rideData)
 
       if (error) throw error
@@ -106,23 +228,54 @@ export function OfferRideForm() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="space-y-3">
+              <Label>Retning</Label>
+              <RadioGroup
+                value={direction}
+                onValueChange={(value) => setDirection(value as "to_school" | "from_school")}
+              >
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="to_school" id="to_school" />
+                  <Label htmlFor="to_school" className="font-normal cursor-pointer">
+                    Til skole (Hjem → {userProfile?.school_name || "Efterskole"})
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="from_school" id="from_school" />
+                  <Label htmlFor="from_school" className="font-normal cursor-pointer">
+                    Fra skole ({userProfile?.school_name || "Efterskole"} → Hjem)
+                  </Label>
+                </div>
+              </RadioGroup>
+            </div>
+
             <div className="grid md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="departureLocation">Afgangssted *</Label>
+                <Label htmlFor="departureLocation">
+                  Afgangssted * {direction === "to_school" && userProfile?.home_address && "(Gemt hjemmeadresse)"}
+                </Label>
                 <GoogleLocationSearch
                   value={formData.departureLocation}
                   onChange={(value) => handleLocationChange("departureLocation", value)}
                   onLocationSelect={handleLocationSelect("departure")}
-                  placeholder="F.eks. København H"
+                  placeholder={
+                    direction === "to_school" ? "Din hjemmeadresse" : userProfile?.school_name || "F.eks. København H"
+                  }
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="destination">Destination *</Label>
+                <Label htmlFor="destination">
+                  Destination * {direction === "from_school" && userProfile?.home_address && "(Gemt hjemmeadresse)"}
+                </Label>
                 <GoogleLocationSearch
                   value={formData.destination}
                   onChange={(value) => handleLocationChange("destination", value)}
                   onLocationSelect={handleLocationSelect("destination")}
-                  placeholder="F.eks. Roskilde Efterskole"
+                  placeholder={
+                    direction === "from_school"
+                      ? "Din hjemmeadresse"
+                      : userProfile?.school_name || "F.eks. Roskilde Efterskole"
+                  }
                 />
               </div>
             </div>

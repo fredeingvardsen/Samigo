@@ -7,12 +7,13 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Badge } from "@/components/ui/badge"
 import { GoogleLocationSearch } from "@/components/map/google-location-search"
 import { GoogleMap } from "@/components/map/google-map"
 import { RideRequestDialog } from "@/components/ride-request-dialog"
 import { calculateDistance } from "@/lib/google-maps-utils"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 
 interface Ride {
   id: string
@@ -34,6 +35,15 @@ interface Ride {
 }
 
 export function FindRideSearch() {
+  const [direction, setDirection] = useState<"to_school" | "from_school">("to_school")
+  const [userProfile, setUserProfile] = useState<{
+    school_id: string | null
+    school_name: string | null
+    home_address: string | null
+    home_lat: number | null
+    home_lng: number | null
+  } | null>(null)
+
   const [searchData, setSearchData] = useState({
     departure: "",
     destination: "",
@@ -48,6 +58,71 @@ export function FindRideSearch() {
   const [hasSearched, setHasSearched] = useState(false)
   const [showMap, setShowMap] = useState(false)
 
+  useEffect(() => {
+    async function fetchProfile() {
+      const supabase = createClient()
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+
+      if (user) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("school_id, school_name, home_address, home_lat, home_lng")
+          .eq("id", user.id)
+          .single()
+
+        if (profile) {
+          setUserProfile(profile)
+        }
+      }
+    }
+
+    fetchProfile()
+  }, [])
+
+  useEffect(() => {
+    if (!userProfile) return
+
+    if (direction === "to_school") {
+      if (userProfile.home_address) {
+        setSearchData((prev) => ({ ...prev, departure: userProfile.home_address || "" }))
+        if (userProfile.home_lat && userProfile.home_lng) {
+          setSelectedLocations((prev) => ({
+            ...prev,
+            departure: {
+              name: userProfile.home_address || "",
+              lat: userProfile.home_lat!,
+              lng: userProfile.home_lng!,
+              address: userProfile.home_address || "",
+            },
+          }))
+        }
+      }
+      if (userProfile.school_name) {
+        setSearchData((prev) => ({ ...prev, destination: userProfile.school_name || "" }))
+      }
+    } else {
+      if (userProfile.school_name) {
+        setSearchData((prev) => ({ ...prev, departure: userProfile.school_name || "" }))
+      }
+      if (userProfile.home_address) {
+        setSearchData((prev) => ({ ...prev, destination: userProfile.home_address || "" }))
+        if (userProfile.home_lat && userProfile.home_lng) {
+          setSelectedLocations((prev) => ({
+            ...prev,
+            destination: {
+              name: userProfile.home_address || "",
+              lat: userProfile.home_lat!,
+              lng: userProfile.home_lng!,
+              address: userProfile.home_address || "",
+            },
+          }))
+        }
+      }
+    }
+  }, [direction, userProfile])
+
   const handleLocationChange = (field: "departure" | "destination", value: string) => {
     setSearchData((prev) => ({ ...prev, [field]: value }))
   }
@@ -56,7 +131,43 @@ export function FindRideSearch() {
     (field: "departure" | "destination") => (location: { name: string; lat: number; lng: number; address: string }) => {
       setSelectedLocations((prev) => ({ ...prev, [field]: location }))
       setSearchData((prev) => ({ ...prev, [field]: location.name }))
+
+      if (field === "departure" && direction === "to_school") {
+        saveHomeAddress(location)
+      }
+      if (field === "destination" && direction === "from_school") {
+        saveHomeAddress(location)
+      }
     }
+
+  const saveHomeAddress = async (location: { name: string; lat: number; lng: number; address: string }) => {
+    const supabase = createClient()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    if (user) {
+      await supabase
+        .from("profiles")
+        .update({
+          home_address: location.address,
+          home_lat: location.lat,
+          home_lng: location.lng,
+        })
+        .eq("id", user.id)
+
+      setUserProfile((prev) =>
+        prev
+          ? {
+              ...prev,
+              home_address: location.address,
+              home_lat: location.lat,
+              home_lng: location.lng,
+            }
+          : null,
+      )
+    }
+  }
 
   const handleInputChange = (name: string, value: string) => {
     setSearchData((prev) => ({ ...prev, [name]: value }))
@@ -87,7 +198,6 @@ export function FindRideSearch() {
         const radiusKm = Number.parseInt(searchData.radius)
 
         filteredRides = filteredRides.filter((ride) => {
-          // Check if ride departure is within radius of search departure
           const departureMatch =
             ride.departure_lat && ride.departure_lng
               ? calculateDistance(
@@ -98,7 +208,6 @@ export function FindRideSearch() {
                 ) <= radiusKm
               : false
 
-          // Check if ride destination is within radius of search destination
           const destinationMatch =
             ride.destination_lat && ride.destination_lng
               ? calculateDistance(
@@ -109,16 +218,13 @@ export function FindRideSearch() {
                 ) <= radiusKm
               : false
 
-          // Also check text match as fallback
           const textMatch =
             ride.departure_location.toLowerCase().includes(searchData.departure.toLowerCase()) &&
             ride.destination.toLowerCase().includes(searchData.destination.toLowerCase())
 
-          // Return true if both departure and destination are within radius, or if text matches
           return (departureMatch && destinationMatch) || textMatch
         })
       } else {
-        // Fallback to text search if no coordinates
         filteredRides = filteredRides.filter(
           (ride) =>
             ride.departure_location.toLowerCase().includes(searchData.departure.toLowerCase()) &&
@@ -206,23 +312,56 @@ export function FindRideSearch() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSearch} className="space-y-4">
+            <div className="space-y-3">
+              <Label>Retning</Label>
+              <RadioGroup
+                value={direction}
+                onValueChange={(value) => setDirection(value as "to_school" | "from_school")}
+              >
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="to_school" id="search_to_school" />
+                  <Label htmlFor="search_to_school" className="font-normal cursor-pointer">
+                    Til skole (Hjem → {userProfile?.school_name || "Efterskole"})
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="from_school" id="search_from_school" />
+                  <Label htmlFor="search_from_school" className="font-normal cursor-pointer">
+                    Fra skole ({userProfile?.school_name || "Efterskole"} → Hjem)
+                  </Label>
+                </div>
+              </RadioGroup>
+            </div>
+
             <div className="grid md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="departure">Fra (afgangssted)</Label>
+                <Label htmlFor="departure">
+                  Fra (afgangssted) {direction === "to_school" && userProfile?.home_address && "(Gemt hjemmeadresse)"}
+                </Label>
                 <GoogleLocationSearch
                   value={searchData.departure}
                   onChange={(value) => handleLocationChange("departure", value)}
                   onLocationSelect={handleLocationSelect("departure")}
-                  placeholder="F.eks. København, Roskilde"
+                  placeholder={
+                    direction === "to_school"
+                      ? "Din hjemmeadresse"
+                      : userProfile?.school_name || "F.eks. København, Roskilde"
+                  }
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="destination">Til (destination)</Label>
+                <Label htmlFor="destination">
+                  Til (destination) {direction === "from_school" && userProfile?.home_address && "(Gemt hjemmeadresse)"}
+                </Label>
                 <GoogleLocationSearch
                   value={searchData.destination}
                   onChange={(value) => handleLocationChange("destination", value)}
                   onLocationSelect={handleLocationSelect("destination")}
-                  placeholder="F.eks. Roskilde Efterskole"
+                  placeholder={
+                    direction === "from_school"
+                      ? "Din hjemmeadresse"
+                      : userProfile?.school_name || "F.eks. Roskilde Efterskole"
+                  }
                 />
               </div>
             </div>
