@@ -1,0 +1,400 @@
+{
+  "efterskoler": [
+    {
+      "name": "Roskilde Efterskole",
+      "city": "Roskilde",
+      "address": "Baunehøjvej 1",
+      "postal_code": "4000",
+      "region": "Sjælland",
+      "latitude": 55.6415,
+      "longitude": 12.0803
+    },
+    {
+      "name": "Sorø Efterskole",
+      "city": "Sorø",
+      "address": "Akademivej 1",
+      "postal_code": "4180",
+      "region": "Sjælland",
+      "latitude": 55.4321,
+      "longitude": 11.5556
+    },
+    {
+      "name": "Odsherred Efterskole",
+      "city": "Højby",
+      "address": "Nykøbingvej 140",
+      "postal_code": "4573",
+      "region": "Sjælland",
+      "latitude": 55.9167,
+      "longitude": 11.6667
+    },
+    {
+      "name": "Nærum Efterskole",
+      "city": "Nærum",
+      "address": "Nærum Hovedgade 35",
+      "postal_code": "2850",
+      "region": "Sjælland",
+      "latitude": 55.8167,
+      "longitude": 12.5333
+    },
+    {
+      "name": "Vallekilde Efterskole",
+      "city": "Vallekilde",
+      "address": "Vallekilde Bygade 2",
+      "postal_code": "4534",
+      "region": "Sjælland",
+      "latitude": 55.8833,
+      "longitude": 11.6833
+    },
+    {
+      "name": "Frederiksborg Efterskole",
+      "city": "Hillerød",
+      "address": "Carlsbergvej 32",
+      "postal_code": "3400",
+      "region": "Sjælland",
+      "latitude": 55.9333,
+      "longitude": 12.3
+    },
+    {
+      "name": "Ollerup Efterskole",
+      "city": "Ollerup",
+      "address": "Ollerupvej 1",
+      "postal_code": "5762",
+      "region": "Fyn",
+      "latitude": 55.1667,
+      "longitude": 10.4833
+    },
+    {
+      "name": "Tommerup Efterskole",
+      "city": "Tommerup",
+      "address": "Skolevej 1",
+      "postal_code": "5690",
+      "region": "Fyn",
+      "latitude": 55.3167,
+      "longitude": 10.2167
+    },
+    {
+      "name": "Kerteminde Efterskole",
+      "city": "Kerteminde",
+      "address": "Hindsholmvej 32",
+      "postal_code": "5300",
+      "region": "Fyn",
+      "latitude": 55.45,
+      "longitude": 10.6667
+    },
+    {
+      "name": "Nordfyns Efterskole",
+      "city": "Bogense",
+      "address": "Adelgade 62",
+      "postal_code": "5400",
+      "region": "Fyn",
+      "latitude": 55.5667,
+      "longitude": 10.0833
+    },
+    {
+      "name": "Hals Efterskole",
+      "city": "Hals",
+      "address": "Skolegade 2",
+      "postal_code": "9362",
+      "region": "Nordjylland",
+      "latitude": 56.9833,
+      "longitude": 10.3167
+    },
+    {
+      "name": "Brønderslev Efterskole",
+      "city": "Brønderslev",
+      "address": "Skolevej 10",
+      "postal_code": "9700",
+      "region": "Nordjylland",
+      "latitude": 57.2667,
+      "longitude": 9.95
+    },
+    {
+      "name": "Aalborg Efterskole",
+      "city": "Aalborg",
+      "address": "Vesterbro 98",
+      "postal_code": "9000",
+      "region": "Nordjylland",
+      "latitude": 57.0488,
+      "longitude": 9.9217
+    },
+    {
+      "name": "Hirtshals Efterskole",
+      "city": "Hirtshals",
+      "address": "Skolevej 5",
+      "postal_code": "9850",
+      "region": "Nordjylland",
+      "latitude": 57.5833,
+      "longitude": 9.9667
+    },
+    {
+      "name": "Viborg Efterskole",
+      "city": "Viborg",
+      "address": "Gl. Skivevej 60",
+      "postal_code": "8800",
+      "region": "Midtjylland",
+      "latitude": 56.45,
+      "longitude": 9.4
+    },
+    {
+      "name": "Silkeborg Efterskole",
+      "city": "Silkeborg",
+      "address": "Søvej 1",
+      "postal_code": "8600",
+      "region": "Midtjylland",
+      "latitude": 56.1697,
+      "longitude": 9.5489
+    },
+    {
+      "name": "Herning Efterskole",
+      "city": "Herning",
+      "address": "Skolegade 15",
+      "postal_code": "7400",
+      "region": "Midtjylland",
+      "latitude": 56.1367,
+      "longitude": 8.9753
+    },
+    {
+      "name": "Randers Efterskole",
+      "city": "Randers",
+      "address": "Mariagervej 102",
+      "postal_code": "8900",
+      "region": "Midtjylland",
+      "latitude": 56.4608,
+      "longitude": 10.0378
+    },
+    {
+      "name": "Aarhus Efterskole",
+      "city": "Aarhus",
+      "address": "Viborgvej 150",
+      "postal_code": "8210",
+      "region": "Midtjylland",
+      "latitude": 56.178,
+      "longitude": 10.1567
+    },
+    {
+      "name": "Grenaa Efterskole",
+      "city": "Grenaa",
+      "address": "Skolevej 20",
+      "postal_code": "8500",
+      "region": "Midtjylland",
+      "latitude": 56.4167,
+      "longitude": 10.8833
+    },
+    {
+      "name": "Ikast Efterskole",
+      "city": "Ikast",
+      "address": "Enghavevej 55",
+      "postal_code": "7430",
+      "region": "Midtjylland",
+      "latitude": 56.1333,
+      "longitude": 9.15
+    },
+    {
+      "name": "Kolding Efterskole",
+      "city": "Kolding",
+      "address": "Skovvangen 1",
+      "postal_code": "6000",
+      "region": "Syddanmark",
+      "latitude": 55.4904,
+      "longitude": 9.4721
+    },
+    {
+      "name": "Esbjerg Efterskole",
+      "city": "Esbjerg",
+      "address": "Skolegade 30",
+      "postal_code": "6700",
+      "region": "Syddanmark",
+      "latitude": 55.4667,
+      "longitude": 8.45
+    },
+    {
+      "name": "Vejle Efterskole",
+      "city": "Vejle",
+      "address": "Ibæk Strandvej 3",
+      "postal_code": "7100",
+      "region": "Syddanmark",
+      "latitude": 55.7089,
+      "longitude": 9.5357
+    },
+    {
+      "name": "Ribe Efterskole",
+      "city": "Ribe",
+      "address": "Skolegade 5",
+      "postal_code": "6760",
+      "region": "Syddanmark",
+      "latitude": 55.3283,
+      "longitude": 8.7633
+    },
+    {
+      "name": "Fredericia Efterskole",
+      "city": "Fredericia",
+      "address": "Vestre Ringvej 73",
+      "postal_code": "7000",
+      "region": "Syddanmark",
+      "latitude": 55.5656,
+      "longitude": 9.752
+    },
+    {
+      "name": "Middelfart Efterskole",
+      "city": "Middelfart",
+      "address": "Østergade 28",
+      "postal_code": "5500",
+      "region": "Syddanmark",
+      "latitude": 55.5056,
+      "longitude": 9.7306
+    },
+    {
+      "name": "Ringkøbing Efterskole",
+      "city": "Ringkøbing",
+      "address": "Skolevej 12",
+      "postal_code": "6950",
+      "region": "Midtjylland",
+      "latitude": 56.09,
+      "longitude": 8.2433
+    },
+    {
+      "name": "Holstebro Efterskole",
+      "city": "Holstebro",
+      "address": "Skolegade 8",
+      "postal_code": "7500",
+      "region": "Midtjylland",
+      "latitude": 56.36,
+      "longitude": 8.6167
+    },
+    {
+      "name": "Lemvig Efterskole",
+      "city": "Lemvig",
+      "address": "Østergade 20",
+      "postal_code": "7620",
+      "region": "Midtjylland",
+      "latitude": 56.5483,
+      "longitude": 8.3
+    },
+    {
+      "name": "Struer Efterskole",
+      "city": "Struer",
+      "address": "Kirkegade 5",
+      "postal_code": "7600",
+      "region": "Midtjylland",
+      "latitude": 56.4917,
+      "longitude": 8.5917
+    },
+    {
+      "name": "Horsens Efterskole",
+      "city": "Horsens",
+      "address": "Søndergade 24",
+      "postal_code": "8700",
+      "region": "Midtjylland",
+      "latitude": 55.8607,
+      "longitude": 9.8501
+    },
+    {
+      "name": "Skanderborg Efterskole",
+      "city": "Skanderborg",
+      "address": "Adelgade 60",
+      "postal_code": "8660",
+      "region": "Midtjylland",
+      "latitude": 56.0333,
+      "longitude": 9.9333
+    },
+    {
+      "name": "Ebeltoft Efterskole",
+      "city": "Ebeltoft",
+      "address": "Skolegade 10",
+      "postal_code": "8400",
+      "region": "Midtjylland",
+      "latitude": 56.195,
+      "longitude": 10.6817
+    },
+    {
+      "name": "Haderslev Efterskole",
+      "city": "Haderslev",
+      "address": "Skolegade 15",
+      "postal_code": "6100",
+      "region": "Syddanmark",
+      "latitude": 55.2533,
+      "longitude": 9.49
+    },
+    {
+      "name": "Aabenraa Efterskole",
+      "city": "Aabenraa",
+      "address": "Skolevej 8",
+      "postal_code": "6200",
+      "region": "Syddanmark",
+      "latitude": 55.0433,
+      "longitude": 9.4183
+    },
+    {
+      "name": "Sønderborg Efterskole",
+      "city": "Sønderborg",
+      "address": "Perlegade 42",
+      "postal_code": "6400",
+      "region": "Syddanmark",
+      "latitude": 54.9094,
+      "longitude": 9.7922
+    },
+    {
+      "name": "Tønder Efterskole",
+      "city": "Tønder",
+      "address": "Østergade 30",
+      "postal_code": "6270",
+      "region": "Syddanmark",
+      "latitude": 54.9333,
+      "longitude": 8.8667
+    },
+    {
+      "name": "Bornholms Efterskole",
+      "city": "Rønne",
+      "address": "Søndergade 12",
+      "postal_code": "3700",
+      "region": "Bornholm",
+      "latitude": 55.1,
+      "longitude": 14.7
+    },
+    {
+      "name": "Testrup Efterskole",
+      "city": "Testrup",
+      "address": "Testrupskovvej 25",
+      "postal_code": "8300",
+      "region": "Midtjylland",
+      "latitude": 56.3167,
+      "longitude": 10.5833
+    },
+    {
+      "name": "Hadsten Efterskole",
+      "city": "Hadsten",
+      "address": "Skolevej 3",
+      "postal_code": "8370",
+      "region": "Midtjylland",
+      "latitude": 56.3267,
+      "longitude": 10.05
+    },
+    {
+      "name": "Nørre Nissum Efterskole",
+      "city": "Nørre Nissum",
+      "address": "Skolegade 1",
+      "postal_code": "7620",
+      "region": "Midtjylland",
+      "latitude": 56.4833,
+      "longitude": 8.3833
+    },
+    {
+      "name": "Ry Efterskole",
+      "city": "Ry",
+      "address": "Klostervej 88",
+      "postal_code": "8680",
+      "region": "Midtjylland",
+      "latitude": 56.09,
+      "longitude": 9.7633
+    },
+    {
+      "name": "Bryrup Efterskole",
+      "city": "Bryrup",
+      "address": "Skolevej 2",
+      "postal_code": "8654",
+      "region": "Midtjylland",
+      "latitude": 56.0167,
+      "longitude": 9.6167
+    }
+  ]
+}

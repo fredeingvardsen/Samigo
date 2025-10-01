@@ -7,8 +7,8 @@ import { Suspense } from "react"
 import "./globals.css"
 
 export const metadata: Metadata = {
-  title: "Efterskole Samkørsel",
-  description: "Samkørsel for efterskoleelever",
+  title: "Samigo - Carpooling for Danish Efterskole Students",
+  description: "Easy carpooling to and from Danish efterskoler",
   generator: "v0.app",
 }
 
@@ -19,15 +19,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="da">
-      <head>
-        <script
-          src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places&language=da&region=DK`}
-          async
-          defer
-        />
-      </head>
       <body className={`font-sans ${GeistSans.variable} ${GeistMono.variable}`}>
-        <Suspense fallback={<div>Loading...</div>}>{children}</Suspense>
+        <Suspense fallback={null}>{children}</Suspense>
         <Analytics />
       </body>
     </html>

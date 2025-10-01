@@ -2,99 +2,142 @@
 
 import type React from "react"
 
-import { useState } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { SchoolSelector } from "@/components/school-selector"
 import { useRouter } from "next/navigation"
+import { useState } from "react"
+
+interface Profile {
+  id: string
+  email: string
+  full_name: string
+  phone: string | null
+  school_name: string | null
+}
 
 interface ProfileFormProps {
-  profile: {
-    id: string
-    full_name: string
-    email: string
-    phone: string
-    school_id: string
-    efterskoler?: {
-      id: string
-      name: string
-      city: string
-    }
-  } | null
+  profile: Profile | null
 }
 
 export function ProfileForm({ profile }: ProfileFormProps) {
-  const [fullName, setFullName] = useState(profile?.full_name || "")
-  const [phone, setPhone] = useState(profile?.phone || "")
-  const [schoolId, setSchoolId] = useState(profile?.school_id || "")
-  const [isLoading, setIsLoading] = useState(false)
+  const [formData, setFormData] = useState({
+    fullName: profile?.full_name || "",
+    phone: profile?.phone || "",
+    schoolName: profile?.school_name || "",
+  })
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target
+    setFormData((prev) => ({ ...prev, [name]: value }))
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    const supabase = createClient()
     setIsLoading(true)
     setError(null)
     setSuccess(false)
 
-    const supabase = createClient()
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+      if (!user) throw new Error("Du skal være logget ind")
 
-    const { error: updateError } = await supabase
-      .from("profiles")
-      .update({
-        full_name: fullName,
-        phone: phone,
-        school_id: schoolId,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", profile?.id)
+      const { error } = await supabase
+        .from("profiles")
+        .update({
+          full_name: formData.fullName,
+          phone: formData.phone || null,
+          school_name: formData.schoolName || null,
+        })
+        .eq("id", user.id)
 
-    if (updateError) {
-      setError(updateError.message)
+      if (error) throw error
+
+      setSuccess(true)
+      setTimeout(() => {
+        router.push("/dashboard")
+      }, 2000)
+    } catch (error: unknown) {
+      setError(error instanceof Error ? error.message : "Der opstod en fejl")
+    } finally {
       setIsLoading(false)
-      return
     }
-
-    setSuccess(true)
-    setIsLoading(false)
-
-    // Refresh the page to show updated data
-    setTimeout(() => {
-      router.refresh()
-    }, 1000)
   }
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Edit Profile</CardTitle>
-        <CardDescription>Update your personal information and school</CardDescription>
+        <CardTitle>Profil oplysninger</CardTitle>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid gap-2">
-            <Label htmlFor="full-name">Full Name</Label>
-            <Input id="full-name" type="text" required value={fullName} onChange={(e) => setFullName(e.target.value)} />
-          </div>
-          <div className="grid gap-2">
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
-            <Input id="email" type="email" value={profile?.email} disabled className="bg-gray-100" />
-            <p className="text-xs text-muted-foreground">Email cannot be changed</p>
+            <Input id="email" type="email" value={profile?.email || ""} disabled className="bg-muted" />
+            <p className="text-sm text-muted-foreground">Email kan ikke ændres</p>
           </div>
-          <div className="grid gap-2">
-            <Label htmlFor="phone">Phone</Label>
-            <Input id="phone" type="tel" required value={phone} onChange={(e) => setPhone(e.target.value)} />
+
+          <div className="space-y-2">
+            <Label htmlFor="fullName">Fulde navn *</Label>
+            <Input
+              id="fullName"
+              name="fullName"
+              type="text"
+              placeholder="Dit fulde navn"
+              required
+              value={formData.fullName}
+              onChange={handleInputChange}
+            />
           </div>
-          <SchoolSelector value={schoolId} onChange={setSchoolId} />
-          {error && <p className="text-sm text-red-500">{error}</p>}
-          {success && <p className="text-sm text-green-600">Profile updated successfully!</p>}
-          <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading ? "Saving..." : "Save Changes"}
-          </Button>
+
+          <div className="space-y-2">
+            <Label htmlFor="schoolName">Efterskole *</Label>
+            <Input
+              id="schoolName"
+              name="schoolName"
+              type="text"
+              placeholder="Navn på din efterskole"
+              required
+              value={formData.schoolName}
+              onChange={handleInputChange}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="phone">Telefonnummer</Label>
+            <Input
+              id="phone"
+              name="phone"
+              type="tel"
+              placeholder="+45 12 34 56 78"
+              value={formData.phone}
+              onChange={handleInputChange}
+            />
+            <p className="text-sm text-muted-foreground">
+              Dit telefonnummer deles kun med andre brugere når I bliver matchet til en tur
+            </p>
+          </div>
+
+          {error && <p className="text-sm text-destructive">{error}</p>}
+          {success && <p className="text-sm text-green-600">Profil opdateret! Omdirigerer til dashboard...</p>}
+
+          <div className="flex gap-4">
+            <Button type="submit" disabled={isLoading} className="flex-1">
+              {isLoading ? "Gemmer..." : "Gem ændringer"}
+            </Button>
+            <Button type="button" variant="outline" onClick={() => router.back()}>
+              Annuller
+            </Button>
+          </div>
         </form>
       </CardContent>
     </Card>

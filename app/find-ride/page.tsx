@@ -1,8 +1,8 @@
 import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
-import { ProfileForm } from "@/components/profile-form"
+import { FindRideSearch } from "@/components/find-ride-search"
 
-export default async function ProfilePage() {
+export default async function FindRidePage() {
   const supabase = await createClient()
   const {
     data: { user },
@@ -13,18 +13,17 @@ export default async function ProfilePage() {
     redirect("/auth/login")
   }
 
-  // Get user profile
-  const { data: profile } = await supabase.from("profiles").select("*").eq("id", user.id).single()
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-secondary/5">
       <div className="container mx-auto px-4 py-8">
-        <div className="max-w-2xl mx-auto">
+        <div className="max-w-4xl mx-auto">
           <div className="mb-8">
-            <h1 className="text-3xl font-bold mb-2">Min profil</h1>
-            <p className="text-muted-foreground">Opdater dine oplysninger så andre brugere kan kontakte dig</p>
+            <h1 className="text-3xl font-bold mb-2">Find en tur</h1>
+            <p className="text-muted-foreground">
+              Søg efter ledige pladser til din destination og vælg den radius du er villig til at køre
+            </p>
           </div>
-          <ProfileForm profile={profile} />
+          <FindRideSearch />
         </div>
       </div>
     </div>

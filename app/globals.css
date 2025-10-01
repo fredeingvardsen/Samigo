@@ -1,9 +1,10 @@
-@import 'tailwindcss';
-@import 'tw-animate-css';
+@import "tailwindcss";
+@import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
 
 :root {
+  /* Updated color scheme to blue and orange theme for Samigo */
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
@@ -75,8 +76,7 @@
 }
 
 @theme inline {
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  /* optional: --font-sans, --font-serif, --font-mono if they are applied in the layout.tsx */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);

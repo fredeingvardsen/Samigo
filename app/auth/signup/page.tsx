@@ -10,15 +10,14 @@ import { Label } from "@/components/ui/label"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
-import { SchoolSelector } from "@/components/school-selector"
 
 export default function SignUpPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
-  const [repeatPassword, setRepeatPassword] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
   const [fullName, setFullName] = useState("")
+  const [schoolName, setSchoolName] = useState("")
   const [phone, setPhone] = useState("")
-  const [schoolId, setSchoolId] = useState<string>("")
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
@@ -29,72 +28,70 @@ export default function SignUpPage() {
     setIsLoading(true)
     setError(null)
 
-    if (password !== repeatPassword) {
-      setError("Passwords do not match")
+    if (password !== confirmPassword) {
+      setError("Adgangskoderne matcher ikke")
       setIsLoading(false)
       return
     }
 
-    if (!schoolId) {
-      setError("Please select your school")
+    if (password.length < 6) {
+      setError("Adgangskoden skal være mindst 6 tegn")
       setIsLoading(false)
       return
     }
 
     try {
-      // Sign up the user
-      const { data: authData, error: authError } = await supabase.auth.signUp({
+      const redirectUrl =
+        process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL ||
+        (typeof window !== "undefined"
+          ? `${window.location.origin}/auth/callback`
+          : `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`)
+
+      const { error } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          emailRedirectTo: process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL || `${window.location.origin}/dashboard`,
+          emailRedirectTo: redirectUrl,
           data: {
             full_name: fullName,
+            school_name: schoolName,
             phone: phone,
           },
         },
       })
-
-      if (authError) throw authError
-
-      // Create profile with school_id
-      if (authData.user) {
-        const { error: profileError } = await supabase.from("profiles").insert({
-          id: authData.user.id,
-          email: email,
-          full_name: fullName,
-          phone: phone,
-          school_id: schoolId,
-        })
-
-        if (profileError) throw profileError
-      }
-
-      router.push("/auth/sign-up-success")
+      if (error) throw error
+      router.push("/auth/signup-success")
     } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : "An error occurred")
+      setError(error instanceof Error ? error.message : "Der opstod en fejl")
     } finally {
       setIsLoading(false)
     }
   }
 
   return (
-    <div className="flex min-h-screen w-full items-center justify-center bg-gray-50 p-6">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-secondary/5 p-6">
       <div className="w-full max-w-md">
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+            Samigo
+          </h1>
+          <p className="text-muted-foreground mt-2">Opret din konto</p>
+        </div>
+
         <Card>
           <CardHeader>
-            <CardTitle className="text-2xl">Sign up</CardTitle>
-            <CardDescription>Create your carpooling account</CardDescription>
+            <CardTitle className="text-2xl">Tilmeld dig</CardTitle>
+            <CardDescription>Udfyld formularen for at oprette din konto</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSignUp}>
               <div className="flex flex-col gap-4">
                 <div className="grid gap-2">
-                  <Label htmlFor="full-name">Full Name</Label>
+                  <Label htmlFor="fullName">Fulde navn</Label>
                   <Input
-                    id="full-name"
+                    id="fullName"
                     type="text"
-                    placeholder="John Doe"
+                    placeholder="Dit fulde navn"
                     required
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
@@ -105,26 +102,35 @@ export default function SignUpPage() {
                   <Input
                     id="email"
                     type="email"
-                    placeholder="m@example.com"
+                    placeholder="din@email.dk"
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                   />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="phone">Phone</Label>
+                  <Label htmlFor="schoolName">Efterskole</Label>
+                  <Input
+                    id="schoolName"
+                    type="text"
+                    placeholder="Navn på din efterskole"
+                    required
+                    value={schoolName}
+                    onChange={(e) => setSchoolName(e.target.value)}
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="phone">Telefonnummer (valgfrit)</Label>
                   <Input
                     id="phone"
                     type="tel"
                     placeholder="+45 12 34 56 78"
-                    required
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                   />
                 </div>
-                <SchoolSelector value={schoolId} onChange={setSchoolId} />
                 <div className="grid gap-2">
-                  <Label htmlFor="password">Password</Label>
+                  <Label htmlFor="password">Adgangskode</Label>
                   <Input
                     id="password"
                     type="password"
@@ -134,24 +140,24 @@ export default function SignUpPage() {
                   />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="repeat-password">Repeat Password</Label>
+                  <Label htmlFor="confirmPassword">Bekræft adgangskode</Label>
                   <Input
-                    id="repeat-password"
+                    id="confirmPassword"
                     type="password"
                     required
-                    value={repeatPassword}
-                    onChange={(e) => setRepeatPassword(e.target.value)}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
                   />
                 </div>
-                {error && <p className="text-sm text-red-500">{error}</p>}
+                {error && <p className="text-sm text-destructive">{error}</p>}
                 <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? "Creating account..." : "Sign up"}
+                  {isLoading ? "Opretter konto..." : "Opret konto"}
                 </Button>
               </div>
-              <div className="mt-4 text-center text-sm">
-                Already have an account?{" "}
-                <Link href="/auth/login" className="underline underline-offset-4">
-                  Login
+              <div className="mt-6 text-center text-sm">
+                Har du allerede en konto?{" "}
+                <Link href="/auth/login" className="text-primary hover:underline">
+                  Log ind
                 </Link>
               </div>
             </form>

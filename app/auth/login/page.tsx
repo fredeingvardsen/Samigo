@@ -28,26 +28,30 @@ export default function LoginPage() {
       const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
-        options: {
-          emailRedirectTo: process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL || `${window.location.origin}/dashboard`,
-        },
       })
       if (error) throw error
       router.push("/dashboard")
     } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : "An error occurred")
+      setError(error instanceof Error ? error.message : "Der opstod en fejl")
     } finally {
       setIsLoading(false)
     }
   }
 
   return (
-    <div className="flex min-h-screen w-full items-center justify-center bg-gray-50 p-6">
-      <div className="w-full max-w-sm">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-secondary/5 p-6">
+      <div className="w-full max-w-md">
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+            Samigo
+          </h1>
+          <p className="text-muted-foreground mt-2">Velkommen tilbage</p>
+        </div>
+
         <Card>
           <CardHeader>
-            <CardTitle className="text-2xl">Login</CardTitle>
-            <CardDescription>Enter your email below to login to your account</CardDescription>
+            <CardTitle className="text-2xl">Log ind</CardTitle>
+            <CardDescription>Indtast din email og adgangskode for at logge ind</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleLogin}>
@@ -57,14 +61,14 @@ export default function LoginPage() {
                   <Input
                     id="email"
                     type="email"
-                    placeholder="m@example.com"
+                    placeholder="din@email.dk"
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                   />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="password">Password</Label>
+                  <Label htmlFor="password">Adgangskode</Label>
                   <Input
                     id="password"
                     type="password"
@@ -73,16 +77,26 @@ export default function LoginPage() {
                     onChange={(e) => setPassword(e.target.value)}
                   />
                 </div>
-                {error && <p className="text-sm text-red-500">{error}</p>}
+                {error && <p className="text-sm text-destructive">{error}</p>}
                 <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? "Logging in..." : "Login"}
+                  {isLoading ? "Logger ind..." : "Log ind"}
                 </Button>
               </div>
-              <div className="mt-4 text-center text-sm">
-                Don&apos;t have an account?{" "}
-                <Link href="/auth/sign-up" className="underline underline-offset-4">
-                  Sign up
-                </Link>
+              <div className="mt-6 text-center text-sm space-y-2">
+                <div>
+                  Har du ikke en konto?{" "}
+                  <Link href="/auth/signup" className="text-primary hover:underline">
+                    Opret konto
+                  </Link>
+                </div>
+                <div>
+                  <Link
+                    href="/auth/reset-password"
+                    className="text-muted-foreground hover:text-primary hover:underline"
+                  >
+                    Glemt adgangskode?
+                  </Link>
+                </div>
               </div>
             </form>
           </CardContent>
