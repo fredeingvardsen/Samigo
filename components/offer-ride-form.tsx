@@ -12,12 +12,8 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { useRouter } from "next/navigation"
 import { useState, useEffect } from "react"
 
-interface OfferRideFormProps {
-  googleMapsApiKey: string
-}
-
 export function OfferRideForm() {
-  const [googleMapsApiKey, setGoogleMapsApiKey] = useState<string>("")
+  // Removed Google Maps integration: use simple text inputs instead
   const [direction, setDirection] = useState<"to_school" | "from_school">("to_school")
   const [userProfile, setUserProfile] = useState<{
     school_id: string | null
@@ -45,9 +41,7 @@ export function OfferRideForm() {
   const [showMap, setShowMap] = useState(false)
   const router = useRouter()
 
-  useEffect(() => {
-    getGoogleMapsApiKey().then(setGoogleMapsApiKey)
-  }, [])
+  // previously fetched google maps api key here; removed
 
   useEffect(() => {
     async function fetchProfile() {
@@ -261,30 +255,26 @@ export function OfferRideForm() {
                 <Label htmlFor="departureLocation">
                   Afgangssted * {direction === "to_school" && userProfile?.home_address && "(Gemt hjemmeadresse)"}
                 </Label>
-                <GoogleLocationSearch
-                  googleMapsApiKey={googleMapsApiKey}
+                <input
+                  id="departureLocation"
+                  name="departureLocation"
+                  className="w-full rounded-md border px-3 py-2"
                   value={formData.departureLocation}
-                  onChange={(value) => handleLocationChange("departureLocation", value)}
-                  onLocationSelect={handleLocationSelect("departure")}
-                  placeholder={
-                    direction === "to_school" ? "Din hjemmeadresse" : userProfile?.school_name || "F.eks. København H"
-                  }
+                  onChange={(e) => setFormData((prev) => ({ ...prev, departureLocation: e.target.value }))}
+                  placeholder={direction === "to_school" ? "Din hjemmeadresse" : userProfile?.school_name || "F.eks. København H"}
                 />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="destination">
                   Destination * {direction === "from_school" && userProfile?.home_address && "(Gemt hjemmeadresse)"}
                 </Label>
-                <GoogleLocationSearch
-                  googleMapsApiKey={googleMapsApiKey}
+                <input
+                  id="destination"
+                  name="destination"
+                  className="w-full rounded-md border px-3 py-2"
                   value={formData.destination}
-                  onChange={(value) => handleLocationChange("destination", value)}
-                  onLocationSelect={handleLocationSelect("destination")}
-                  placeholder={
-                    direction === "from_school"
-                      ? "Din hjemmeadresse"
-                      : userProfile?.school_name || "F.eks. Roskilde Efterskole"
-                  }
+                  onChange={(e) => setFormData((prev) => ({ ...prev, destination: e.target.value }))}
+                  placeholder={direction === "from_school" ? "Din hjemmeadresse" : userProfile?.school_name || "F.eks. Roskilde Efterskole"}
                 />
               </div>
             </div>
@@ -298,18 +288,9 @@ export function OfferRideForm() {
               </div>
 
               {showMap && (
-                <GoogleMap
-                  googleMapsApiKey={googleMapsApiKey}
-                  height="300px"
-                  rideRoute={
-                    selectedLocations.departure && selectedLocations.destination
-                      ? {
-                          start: selectedLocations.departure,
-                          end: selectedLocations.destination,
-                        }
-                      : undefined
-                  }
-                />
+                <div className="w-full h-72 bg-muted/10 rounded flex items-center justify-center text-sm text-muted-foreground">
+                  Kort er ikke tilgængeligt (Google Maps fjernet). Vis rute mellem valgt afgang og destination i formularen.
+                </div>
               )}
             </div>
 

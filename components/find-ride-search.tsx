@@ -32,7 +32,7 @@ interface Ride {
 }
 
 export function FindRideSearch() {
-  const [googleMapsApiKey, setGoogleMapsApiKey] = useState<string>("")
+  // Removed Google Maps integration: keep simple text inputs instead
   const [direction, setDirection] = useState<"to_school" | "from_school">("to_school")
   const [userProfile, setUserProfile] = useState<{
     school_id: string | null
@@ -56,9 +56,7 @@ export function FindRideSearch() {
   const [hasSearched, setHasSearched] = useState(false)
   const [showMap, setShowMap] = useState(false)
 
-  useEffect(() => {
-    getGoogleMapsApiKey().then(setGoogleMapsApiKey)
-  }, [])
+  // previously fetched google maps api key here; removed
 
   useEffect(() => {
     async function fetchProfile() {
@@ -340,32 +338,24 @@ export function FindRideSearch() {
                 <Label htmlFor="departure">
                   Fra (afgangssted) {direction === "to_school" && userProfile?.home_address && "(Gemt hjemmeadresse)"}
                 </Label>
-                <GoogleLocationSearch
-                  googleMapsApiKey={googleMapsApiKey}
+                <input
+                  id="departure"
+                  className="w-full rounded-md border px-3 py-2"
                   value={searchData.departure}
-                  onChange={(value) => handleLocationChange("departure", value)}
-                  onLocationSelect={handleLocationSelect("departure")}
-                  placeholder={
-                    direction === "to_school"
-                      ? "Din hjemmeadresse"
-                      : userProfile?.school_name || "F.eks. København, Roskilde"
-                  }
+                  onChange={(e) => handleLocationChange("departure", e.target.value)}
+                  placeholder={direction === "to_school" ? "Din hjemmeadresse" : userProfile?.school_name || "F.eks. København, Roskilde"}
                 />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="destination">
                   Til (destination) {direction === "from_school" && userProfile?.home_address && "(Gemt hjemmeadresse)"}
                 </Label>
-                <GoogleLocationSearch
-                  googleMapsApiKey={googleMapsApiKey}
+                <input
+                  id="destination"
+                  className="w-full rounded-md border px-3 py-2"
                   value={searchData.destination}
-                  onChange={(value) => handleLocationChange("destination", value)}
-                  onLocationSelect={handleLocationSelect("destination")}
-                  placeholder={
-                    direction === "from_school"
-                      ? "Din hjemmeadresse"
-                      : userProfile?.school_name || "F.eks. Roskilde Efterskole"
-                  }
+                  onChange={(e) => handleLocationChange("destination", e.target.value)}
+                  placeholder={direction === "from_school" ? "Din hjemmeadresse" : userProfile?.school_name || "F.eks. Roskilde Efterskole"}
                 />
               </div>
             </div>
@@ -399,22 +389,9 @@ export function FindRideSearch() {
               </div>
 
               {showMap && (selectedLocations.departure || selectedLocations.destination) && (
-                <GoogleMap
-                  googleMapsApiKey={googleMapsApiKey}
-                  height="300px"
-                  selectedLocation={selectedLocations.departure || selectedLocations.destination}
-                  showRadius={
-                    selectedLocations.departure
-                      ? {
-                          center: {
-                            lat: selectedLocations.departure.lat,
-                            lng: selectedLocations.departure.lng,
-                          },
-                          radiusKm: Number.parseInt(searchData.radius),
-                        }
-                      : undefined
-                  }
-                />
+                <div className="w-full h-72 bg-muted/10 rounded flex items-center justify-center text-sm text-muted-foreground">
+                  Kort er ikke tilgængeligt (Google Maps fjernet). Vis valgt placering: {selectedLocations.departure?.name || selectedLocations.destination?.name}
+                </div>
               )}
             </div>
 
@@ -437,32 +414,9 @@ export function FindRideSearch() {
           </CardHeader>
           {showMap && (
             <CardContent>
-              <GoogleMap
-                googleMapsApiKey={googleMapsApiKey}
-                height="400px"
-                rides={rides.map((ride) => ({
-                  id: ride.id,
-                  location: ride.departure_location,
-                  destination: ride.destination,
-                  location_lat: ride.departure_lat || 0,
-                  location_lng: ride.departure_lng || 0,
-                  destination_lat: ride.destination_lat || 0,
-                  destination_lng: ride.destination_lng || 0,
-                  available_seats: ride.available_seats,
-                }))}
-                showEfterskoler={true}
-                showRadius={
-                  selectedLocations.departure
-                    ? {
-                        center: {
-                          lat: selectedLocations.departure.lat,
-                          lng: selectedLocations.departure.lng,
-                        },
-                        radiusKm: Number.parseInt(searchData.radius),
-                      }
-                    : undefined
-                }
-              />
+              <div className="w-full h-96 bg-muted/10 rounded flex items-center justify-center text-sm text-muted-foreground">
+                Kort er ikke tilgængeligt (Google Maps fjernet). Vis {rides.length} tur(er) i listen nedenfor.
+              </div>
             </CardContent>
           )}
         </Card>
