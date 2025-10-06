@@ -9,11 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Badge } from "@/components/ui/badge"
-import { GoogleLocationSearch } from "@/components/map/google-location-search"
-import { GoogleMap } from "@/components/map/google-map"
 import { RideRequestDialog } from "@/components/ride-request-dialog"
-import { calculateDistance } from "@/lib/google-maps-utils"
-import { getGoogleMapsApiKey } from "@/lib/actions/get-maps-key"
 import { useState, useEffect } from "react"
 
 interface Ride {
