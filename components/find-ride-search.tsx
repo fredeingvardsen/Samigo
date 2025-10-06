@@ -13,6 +13,7 @@ import { GoogleLocationSearch } from "@/components/map/google-location-search"
 import { GoogleMap } from "@/components/map/google-map"
 import { RideRequestDialog } from "@/components/ride-request-dialog"
 import { calculateDistance } from "@/lib/google-maps-utils"
+import { getGoogleMapsApiKey } from "@/lib/actions/get-maps-key"
 import { useState, useEffect } from "react"
 
 interface Ride {
@@ -35,6 +36,7 @@ interface Ride {
 }
 
 export function FindRideSearch() {
+  const [googleMapsApiKey, setGoogleMapsApiKey] = useState<string>("")
   const [direction, setDirection] = useState<"to_school" | "from_school">("to_school")
   const [userProfile, setUserProfile] = useState<{
     school_id: string | null
@@ -57,6 +59,10 @@ export function FindRideSearch() {
   const [isLoading, setIsLoading] = useState(false)
   const [hasSearched, setHasSearched] = useState(false)
   const [showMap, setShowMap] = useState(false)
+
+  useEffect(() => {
+    getGoogleMapsApiKey().then(setGoogleMapsApiKey)
+  }, [])
 
   useEffect(() => {
     async function fetchProfile() {
@@ -339,6 +345,7 @@ export function FindRideSearch() {
                   Fra (afgangssted) {direction === "to_school" && userProfile?.home_address && "(Gemt hjemmeadresse)"}
                 </Label>
                 <GoogleLocationSearch
+                  googleMapsApiKey={googleMapsApiKey}
                   value={searchData.departure}
                   onChange={(value) => handleLocationChange("departure", value)}
                   onLocationSelect={handleLocationSelect("departure")}
@@ -354,6 +361,7 @@ export function FindRideSearch() {
                   Til (destination) {direction === "from_school" && userProfile?.home_address && "(Gemt hjemmeadresse)"}
                 </Label>
                 <GoogleLocationSearch
+                  googleMapsApiKey={googleMapsApiKey}
                   value={searchData.destination}
                   onChange={(value) => handleLocationChange("destination", value)}
                   onLocationSelect={handleLocationSelect("destination")}
@@ -396,6 +404,7 @@ export function FindRideSearch() {
 
               {showMap && (selectedLocations.departure || selectedLocations.destination) && (
                 <GoogleMap
+                  googleMapsApiKey={googleMapsApiKey}
                   height="300px"
                   selectedLocation={selectedLocations.departure || selectedLocations.destination}
                   showRadius={
@@ -433,6 +442,7 @@ export function FindRideSearch() {
           {showMap && (
             <CardContent>
               <GoogleMap
+                googleMapsApiKey={googleMapsApiKey}
                 height="400px"
                 rides={rides.map((ride) => ({
                   id: ride.id,

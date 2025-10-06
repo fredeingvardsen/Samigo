@@ -6,6 +6,7 @@ import { useEffect, useState } from "react"
 import * as google from "googlemaps"
 
 interface GoogleMapProps {
+  googleMapsApiKey: string
   height?: string
   selectedLocation?: {
     name: string
@@ -40,7 +41,7 @@ function MapContent({
   showRadius,
   rideRoute,
   showEfterskoler = false,
-}: Omit<GoogleMapProps, "height">) {
+}: Omit<GoogleMapProps, "height" | "googleMapsApiKey">) {
   const map = useMap()
   const [efterskoler, setEfterskoler] = useState<Efterskole[]>([])
   const [directions, setDirections] = useState<google.maps.DirectionsResult | null>(null)
@@ -286,10 +287,8 @@ function DirectionsRenderer({ directions }: { directions: google.maps.Directions
   return null
 }
 
-export function GoogleMap({ height = "400px", ...props }: GoogleMapProps) {
-  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
-
-  if (!apiKey) {
+export function GoogleMap({ googleMapsApiKey, height = "400px", ...props }: GoogleMapProps) {
+  if (!googleMapsApiKey) {
     return (
       <div className="flex items-center justify-center bg-muted rounded-lg" style={{ height }}>
         <div className="text-center p-4">
@@ -300,7 +299,7 @@ export function GoogleMap({ height = "400px", ...props }: GoogleMapProps) {
   }
 
   return (
-    <APIProvider apiKey={apiKey} language="da" region="DK">
+    <APIProvider apiKey={googleMapsApiKey} language="da" region="DK">
       <Map
         defaultCenter={{ lat: 55.6761, lng: 12.5683 }}
         defaultZoom={7}

@@ -7,13 +7,19 @@ import { useEffect, useRef, useState } from "react"
 import { google } from "google-maps"
 
 interface GoogleLocationSearchProps {
+  googleMapsApiKey: string
   value: string
   onChange: (value: string) => void
   onLocationSelect: (location: { name: string; lat: number; lng: number; address: string }) => void
   placeholder?: string
 }
 
-function LocationSearchInput({ value, onChange, onLocationSelect, placeholder }: GoogleLocationSearchProps) {
+function LocationSearchInput({
+  value,
+  onChange,
+  onLocationSelect,
+  placeholder,
+}: Omit<GoogleLocationSearchProps, "googleMapsApiKey">) {
   const inputRef = useRef<HTMLInputElement>(null)
   const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null)
   const places = useMapsLibrary("places")
@@ -148,10 +154,8 @@ function LocationSearchInput({ value, onChange, onLocationSelect, placeholder }:
   )
 }
 
-export function GoogleLocationSearch(props: GoogleLocationSearchProps) {
-  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
-
-  if (!apiKey) {
+export function GoogleLocationSearch({ googleMapsApiKey, ...props }: GoogleLocationSearchProps) {
+  if (!googleMapsApiKey) {
     return (
       <div className="text-sm text-destructive p-2 border border-destructive rounded">
         Google Maps API key ikke konfigureret
@@ -160,7 +164,7 @@ export function GoogleLocationSearch(props: GoogleLocationSearchProps) {
   }
 
   return (
-    <APIProvider apiKey={apiKey} language="da" region="DK">
+    <APIProvider apiKey={googleMapsApiKey} language="da" region="DK">
       <LocationSearchInput {...props} />
     </APIProvider>
   )

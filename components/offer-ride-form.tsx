@@ -11,10 +11,16 @@ import { Textarea } from "@/components/ui/textarea"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { GoogleLocationSearch } from "@/components/map/google-location-search"
 import { GoogleMap } from "@/components/map/google-map"
+import { getGoogleMapsApiKey } from "@/lib/actions/get-maps-key"
 import { useRouter } from "next/navigation"
 import { useState, useEffect } from "react"
 
+interface OfferRideFormProps {
+  googleMapsApiKey: string
+}
+
 export function OfferRideForm() {
+  const [googleMapsApiKey, setGoogleMapsApiKey] = useState<string>("")
   const [direction, setDirection] = useState<"to_school" | "from_school">("to_school")
   const [userProfile, setUserProfile] = useState<{
     school_id: string | null
@@ -41,6 +47,10 @@ export function OfferRideForm() {
   const [isLoading, setIsLoading] = useState(false)
   const [showMap, setShowMap] = useState(false)
   const router = useRouter()
+
+  useEffect(() => {
+    getGoogleMapsApiKey().then(setGoogleMapsApiKey)
+  }, [])
 
   useEffect(() => {
     async function fetchProfile() {
@@ -255,6 +265,7 @@ export function OfferRideForm() {
                   Afgangssted * {direction === "to_school" && userProfile?.home_address && "(Gemt hjemmeadresse)"}
                 </Label>
                 <GoogleLocationSearch
+                  googleMapsApiKey={googleMapsApiKey}
                   value={formData.departureLocation}
                   onChange={(value) => handleLocationChange("departureLocation", value)}
                   onLocationSelect={handleLocationSelect("departure")}
@@ -268,6 +279,7 @@ export function OfferRideForm() {
                   Destination * {direction === "from_school" && userProfile?.home_address && "(Gemt hjemmeadresse)"}
                 </Label>
                 <GoogleLocationSearch
+                  googleMapsApiKey={googleMapsApiKey}
                   value={formData.destination}
                   onChange={(value) => handleLocationChange("destination", value)}
                   onLocationSelect={handleLocationSelect("destination")}
@@ -290,6 +302,7 @@ export function OfferRideForm() {
 
               {showMap && (
                 <GoogleMap
+                  googleMapsApiKey={googleMapsApiKey}
                   height="300px"
                   rideRoute={
                     selectedLocations.departure && selectedLocations.destination
