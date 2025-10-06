@@ -3,7 +3,7 @@
 import { APIProvider, Map, Marker, useMap, useMapsLibrary } from "@vis.gl/react-google-maps"
 import { getAllEfterskoler, type Efterskole } from "@/lib/efterskoler-service"
 import { useEffect, useState } from "react"
-import * as google from "googlemaps"
+import { google } from "googlemaps"
 
 interface GoogleMapProps {
   googleMapsApiKey: string
@@ -60,7 +60,7 @@ function MapContent({
       return
     }
 
-    const service = new google.maps.DirectionsService()
+    const service = new directionsService.DirectionsService()
     service.route(
       {
         origin: rideRoute.start,
